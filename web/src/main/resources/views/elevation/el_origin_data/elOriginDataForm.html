@@ -1,0 +1,195 @@
+<% layout('/layouts/default.html', {title: '高程——起始数据管理', libs: ['validate']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header with-border">
+			<div class="box-title">
+				<i class="fa icon-note"></i> ${text(elOriginData.isNewRecord ? '新增高程——起始数据' : '编辑高程——起始数据')}
+			</div>
+			<div class="box-tools pull-right">
+				<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+			</div>
+		</div>
+		<#form:form id="inputForm" model="${elOriginData}" action="${ctx}/el_origin_data/elOriginData/save" method="post" class="form-horizontal">
+			<div class="box-body">
+				<div class="form-unit">${text('基本信息')}</div>
+				<#form:hidden path="id"/>
+
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年5月30日 su修改-->
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('小组')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="group.id" id="group_id"
+								items="${groupList}" itemLabel="groupName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('导线')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="line.id" id="line_id"
+								items="${lineList}" itemLabel="lineName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div style="margin: 20px 0 10px 70px;color: #00B83F">${text('起始测站信息')}</div>
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('起始测站')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:hidden path="originStationId" id="origin_stn_id" class="form-control required"/>
+								<#form:input id="origin_stn_name" disabled="true" class="form-control required"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('起始高程')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="originElevation" class="form-control required double4decimal"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div style="margin: 20px 0 10px 70px;color: #00B83F">${text('终点测站信息')}</div>
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('终点测站')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:hidden path="endStationId" id="end_stn_id" class="form-control required"/>
+								<#form:input id="end_stn_name" disabled="true" class="form-control required"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('终点高程')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="endElevation" class="form-control required double4decimal"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-8">
+						<div class="form-group">
+							<label class="control-label col-sm-2" title="">
+								<span class="required hide">*</span> ${text('备注信息')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-10">
+								<#form:textarea path="remarks" rows="4" maxlength="500" class="form-control"/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--————————————————————————————————————————————————————————————————————————-->
+
+			<div class="box-footer">
+				<div class="row">
+					<div class="col-sm-offset-2 col-sm-10">
+						<% if (hasPermi('el_origin_data:elOriginData:edit')){ %>
+							<button type="submit" class="btn btn-sm btn-primary" id="btnSubmit"><i class="fa fa-check"></i> ${text('保 存')}</button>&nbsp;
+						<% } %>
+						<button type="button" class="btn btn-sm btn-default" id="btnCancel" onclick="js.closeCurrentTabPage()"><i class="fa fa-reply-all"></i> ${text('关 闭')}</button>
+					</div>
+				</div>
+			</div>
+		</#form:form>
+	</div>
+</div>
+<% } %>
+<script>
+$("#inputForm").validate({
+	submitHandler: function(form){
+		js.ajaxSubmitForm($(form), function(data){
+			js.showMessage(data.message);
+			if(data.result == Global.TRUE){
+				js.closeCurrentTabPage(function(contentWindow){
+					contentWindow.page();
+				});
+			}
+		}, "json");
+    }
+});
+
+// 新增起始数据时，隐藏前后站的表单。
+// 编辑起始数据时，显示起始和终点测站的名称。
+// 2022年5月23日 su添加
+var originStnId = $('#origin_stn_id').val()
+if (originStnId !== '') {
+	$.get("${ctx}/el_station/eLStation/getStaByStaId?stationId=" + originStnId, function (result) {
+		var stationName = result.ELStation.stationName
+		$('#origin_stn_name').val(stationName)
+	});
+}
+var endStnId = $('#end_stn_id').val()
+if (endStnId !== '') {
+	$.get("${ctx}/el_station/eLStation/getStaByStaId?stationId=" + endStnId, function (result) {
+		var stationName = result.ELStation.stationName
+		$('#end_stn_name').val(stationName)
+	});
+}
+
+// 查询导线 2022年5月30日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/el_line/eLLine/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.ELLineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+
+// 查询测站 2022年5月30日 su添加
+$("#line_id").change(function () {
+	var originStnId = document.getElementById("origin_stn_id");
+	var originStnName = document.getElementById("origin_stn_name");
+	var endStnId = document.getElementById("end_stn_id");
+	var endStnName = document.getElementById("end_stn_name");
+
+	//导线下拉框改变时发送请求到后台查询对应导线下的测站
+	$.get("${ctx}/el_station/eLStation/findOriginEndStaByLineId?lineId=" + this.value, function (result) {
+		var stationList = result.ELStationList;
+
+		if (stationList[0] === '') {
+			originStnId.value = ''
+			originStnName.value = ''
+			endStnId.value = ''
+			endStnName.value = ''
+		} else {
+			var originStation = stationList[0]
+			var endStation = stationList[1]
+
+			originStnId.value = originStation.id
+			originStnName.value = originStation.stationName
+			endStnId.value = endStation.id
+			endStnName.value = endStation.stationName
+		}
+	});
+});
+</script>

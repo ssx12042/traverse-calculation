@@ -1,0 +1,78 @@
+<% layout('/layouts/default.html', {title: '间接平差的结果评定管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('间接平差的结果评定管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('result_evaluation_strict:resultEvaluationStrict:edit')){ %>
+					<a href="${ctx}/result_evaluation_strict/resultEvaluationStrict/form" class="btn btn-default btnTool" title="${text('新增间接平差的结果评定')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${resultEvaluationStrict}" action="${ctx}/result_evaluation_strict/resultEvaluationStrict/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('导线id')}：</label>
+					<div class="control-inline">
+						<#form:input path="lineId" maxlength="64" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("导线id")}', name:'lineId', index:'a.line_id', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/result_evaluation_strict/resultEvaluationStrict/form?id='+row.id+'" class="btnList" data-title="${text("编辑间接平差的结果评定")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("单位权中误差")}', name:'mediumerrorUnitweight', index:'a.mediumerror_unitweight', width:150, align:"right", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("导线等级")}', name:'traverseClass', index:'a.traverse_class', width:150, align:"left"},
+		{header:'${text("结果评价")}', name:'resultEvaluation', index:'a.result_evaluation', width:150, align:"left"},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('result_evaluation_strict:resultEvaluationStrict:edit')){ %>
+				actions.push('<a href="${ctx}/result_evaluation_strict/resultEvaluationStrict/form?id='+row.id+'" class="btnList" title="${text("编辑间接平差的结果评定")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>

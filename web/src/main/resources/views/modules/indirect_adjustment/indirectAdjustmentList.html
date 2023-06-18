@@ -1,0 +1,313 @@
+<% layout('/layouts/default.html', {title: '间接平差管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('间接平差管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('indirect_adjustment:indirectAdjustment:edit')){ %>
+					<a href="${ctx}/indirect_adjustment/indirectAdjustment/form" class="btn btn-default btnTool" title="${text('新增间接平差')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+				<!--2022年月22日 su添加-->
+				<a href="javascript:" class="btn btn-default" id="btnExport" title="${text('导出数据到Excel')}"><i class="glyphicon glyphicon-export"></i> ${text('导出')}</a>
+			</div>
+		</div>
+
+		<!--————————————————————————————————————————————————————————————————————————-->
+		<!--2022年月22日 su添加-->
+		<div id="formDiv" style="display: none">
+			<form id="exportForm" action="${ctx}/observation/observationData/exportData" method="post"
+				  enctype="application/x-www-form-urlencoded" style="padding: 5px">
+				<div style="padding: 10px; color: red">请选择要导出数据的导线</div>
+				<div class="my_div">
+					<span style="color: red">*</span> ${text('小组')}：
+					<#form:select path="group.id" id="group_id2" class="my_select"
+					items="${groupList}" itemLabel="groupName" itemValue="id"
+					dictType="" blankOption="true" />
+				</div>
+				<div class="my_div" style="margin-left: 50px">
+					<span style="color: red">*</span> ${text('导线')}：
+					<#form:select path="line.id" id="line_id2" class="my_select"
+					items="${lineList}" itemLabel="lineName" itemValue="id"
+					dictType="" blankOption="true" />
+				</div>
+				<button id="btn_submit" type="button">导出</button>
+			</form>
+		</div>
+		<!--————————————————————————————————————————————————————————————————————————-->
+
+		<div class="box-body">
+			<#form:form id="searchForm" model="${indirectAdjustment}" action="${ctx}/indirect_adjustment/indirectAdjustment/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年3月15日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<!--————————————————————————————————————————————————————————————————————————-->
+
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('解算时间')}：</label>
+					<div class="control-inline">
+						<!--<#form:input path="solutionDate" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>-->
+						<#form:input path="solutionDate" maxlength="20" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<!--————————————————————————————————————————————————————————————————————————-->
+<!--2022年6月22日 su添加-->
+<style>
+	.my_div {
+		display: inline;
+		margin-left: 10px;
+	}
+
+	.my_select {
+		width: 120px;
+		height: 28px;
+		border-radius: 5px;
+	}
+
+	#btn_submit {
+		color: #fff;
+		background-color: #1e9fff;
+		width: 60px;
+		height: 33px;
+		margin-left: 50px;
+		border-radius: 5px;
+	}
+</style>
+<!--————————————————————————————————————————————————————————————————————————-->
+<!--引入公共js代码 2022年5月17日 su添加-->
+<script src="${ctxStatic}/common/common.js"></script>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年4月5日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u6.group_name', width:70, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u5.line_name', width:70, align:"center"},
+
+		{header:'${text("后视站点")}', name:'backStn.stationName', index:'u4.station_name', width:70, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测站")}', name:'station.stationName', index:'u2.station_name', width:70, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return "<span style='color: dodgerblue'>" + val + "</span>";
+		}},
+		{header:'${text("前视站点")}', name:'foreStn.stationName', index:'u3.station_name', width:70, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("简易")}', name:'distance', index:'a.distance', width:90, align:"center", formatter: function(val, obj, row, act){
+			if (val === 0.) {
+				return "无"
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("严密")}', name:'strictDistance', index:'a.strict_distance', width:90, align:"center", formatter: function(val, obj, row, act){
+			if (val === 0.) {
+				return "无"
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'angDeg', index:'a.ang_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'angMin', index:'a.ang_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'angSec', index:'a.ang_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'strictAngDeg', index:'a.strict_ang_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'strictAngMin', index:'a.strict_ang_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'strictAngSec', index:'a.strict_ang_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("X")}', name:'finalCoordX', index:'a.final_coord_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'finalCoordY', index:'a.final_coord_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("X")}', name:'strictCoordX', index:'a.strict_coord_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'strictCoordY', index:'a.strict_coord_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("导线测量等级")}', name:'resEvaStrict.traverseClass', index:'u7.traverse_class', width:50, align:"center"},
+		{header:'${text("X")}', name:'mediumErrorX', index:'a.medium_error_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'mediumErrorY', index:'a.medium_error_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("单位权中误差(mm)")}', name:'resEvaStrict.mediumerrorUnitweight', index:'u7.mediumError_unitWeight', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("结果评价")}', name:'resEvaStrict.resultEvaluation', index:'u7.result_evaluation', width:100, align:"center", formatter: function(val, obj, row, act){
+			// 对结果评价进行美化 2022年4月11日 su添加
+			if (val == "√") {
+				return "<span style='color: #59A869; font-weight: bold'>" + val + "</span>";
+			} else {
+				return "<span style='color: red'>" + val + "</span>";
+			}
+		}},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:300, align:"center"}
+		// 不需要操作 2022年4月5日 su修改
+		/*,
+		{header:'${text("操作")}', name:'actions', width:120, sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('indirect_adjustment:indirectAdjustment:edit')){ %>
+				actions.push('<a href="${ctx}/indirect_adjustment/indirectAdjustment/form?id='+row.id+'" class="btnList" title="${text("编辑间接平差")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}*/
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年3月15日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据小组名称来合并导线名称
+		// MergerRowspanToOther("dataGrid", 'group.groupName', 'line.lineName');
+		// 根据导线来合并解算时间
+		MergerRowspanToOther("dataGrid", 'line.lineName', 'solutionDate');
+		// 根据解算时间来合并导线名称
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'line.lineName');
+		// 根据解算时间来合并导线测量等级
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEvaStrict.traverseClass');
+		// 根据解算时间来合并单位权中误差(mm)
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEvaStrict.mediumerrorUnitweight');
+		// 根据解算时间来合并状态
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'status');
+		// 根据解算时间来合并结果评价
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEvaStrict.resultEvaluation');
+	},
+	// 设置多级表头
+	groupHeaders: {
+		twoLevel: [
+			{startColumnName: 'angDeg', numberOfColumns: 3, titleText: '简易'},
+			{startColumnName: 'strictAngDeg', numberOfColumns: 3, titleText: '严密'},
+			{startColumnName: 'finalCoordX', numberOfColumns: 2, titleText: '简易'},
+			{startColumnName: 'strictCoordX', numberOfColumns: 2, titleText: '严密'},
+			{startColumnName: 'mediumErrorX', numberOfColumns: 2, titleText: '待定点坐标平差值的中误差(mm)'},
+		],
+		threeLevel:[
+			{startColumnName: 'distance', numberOfColumns: 2, titleText: '平距(m)(前视)'},
+			{startColumnName: 'angDeg', numberOfColumns: 6, titleText: '转折角'},
+			{startColumnName: 'finalCoordX', numberOfColumns: 4, titleText: '坐标(m)'},
+			{startColumnName: 'resEvaStrict.traverseClass', numberOfColumns: 5, titleText: '结果评定'},
+		]
+	}
+});
+
+// 查询导线 2022年3月15日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+
+<!--————————————————————————————————————————————————————————————————————————-->
+// 导出数据到Excel表 2022年6月22日 su添加
+// 查询导线
+$("#group_id2").change(function () {
+	var lineSelect2 = document.getElementById("line_id2");
+	// 需要先把导线下拉框置空
+	$("#line_id2").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		lineList.forEach(function (line) {
+			lineSelect2.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+
+// 导出表单的显示按钮
+$('#btnExport').click(function(){
+	if (document.getElementById("formDiv").style.display === "block") {
+		document.getElementById("formDiv").style.display = "none"; //隐藏
+	} else {
+		document.getElementById("formDiv").style.display = "block";//显示
+	}
+});
+
+// 导出数据
+$('#btn_submit').click(function () {
+	var lineSelect = document.getElementById("line_id2");
+	if (lineSelect.value === null || lineSelect.value === "") {
+		return
+	}
+
+	var lineId = lineSelect.value
+
+	js.ajaxSubmitForm($('#searchForm'), {
+		url:'${ctx}/indirect_adjustment/indirectAdjustment/exportData?lineId=' + lineId,
+		downloadFile:true
+	});
+	document.getElementById("formDiv").style.display = "none"; //隐藏
+});
+<!--————————————————————————————————————————————————————————————————————————-->
+</script>

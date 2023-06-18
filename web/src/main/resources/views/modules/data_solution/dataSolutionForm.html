@@ -1,0 +1,127 @@
+<% layout('/layouts/default.html', {title: '数据解算管理', libs: ['validate']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header with-border">
+			<div class="box-title">
+				<i class="fa icon-note"></i> ${text(dataSolution.isNewRecord ? '新增数据解算' : '编辑数据解算')}
+			</div>
+			<div class="box-tools pull-right">
+				<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+			</div>
+		</div>
+		<#form:form id="inputForm" model="${dataSolution}" action="${ctx}/data_solution/dataSolution/save" method="post" class="form-horizontal">
+			<div class="box-body">
+				<div class="form-unit">${text('基本信息')}</div>
+				<#form:hidden path="id"/>
+
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年3月15日 su修改-->
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('小组')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="group.id" id="group_id"
+								items="${groupList}" itemLabel="groupName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('导线')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="line.id" id="line_id"
+								items="${lineList}" itemLabel="lineName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('导线测量等级')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<% var items = [
+								{label:'三等',value:'三等'},
+								{label:'四等',value:'四等'},
+								{label:'一级',value:'一级'},
+								{label:'二级',value:'二级'},
+								{label:'三级',value:'三级'}
+								]; %>
+								<#form:select path="traverseClass" id="traverse_class"
+								items="${items}" itemLabel="label" itemValue="value"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+				</div>
+				<!--————————————————————————————————————————————————————————————————————————-->
+
+				<div class="row">
+					<div class="col-xs-12">
+						<div class="form-group">
+							<label class="control-label col-sm-2" title="">
+								<span class="required hide">*</span> ${text('备注信息')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-10">
+								<#form:textarea path="remarks" rows="4" maxlength="500" class="form-control"/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="box-footer">
+				<div class="row">
+					<div class="col-sm-offset-2 col-sm-10">
+						<% if (hasPermi('data_solution:dataSolution:edit')){ %>
+							<button type="submit" class="btn btn-sm btn-primary" id="btnSubmit"><i class="fa fa-check"></i> ${text('解 算')}</button>&nbsp;
+						<% } %>
+						<button type="button" class="btn btn-sm btn-default" id="btnCancel" onclick="js.closeCurrentTabPage()"><i class="fa fa-reply-all"></i> ${text('关 闭')}</button>
+					</div>
+				</div>
+			</div>
+		</#form:form>
+	</div>
+</div>
+<% } %>
+<script>
+$("#inputForm").validate({
+	submitHandler: function(form){
+		js.ajaxSubmitForm($(form), function(data){
+			if(data.result == Global.TRUE){
+				js.showMessage(data.message);
+				js.closeCurrentTabPage(function(contentWindow){
+					contentWindow.page();
+				});
+			} else {
+				// 失败就显示红色
+				js.showMessage(data.message, '', 'error');
+			}
+		}, "json");
+    }
+});
+
+// 查询导线 2022年3月15日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		// lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

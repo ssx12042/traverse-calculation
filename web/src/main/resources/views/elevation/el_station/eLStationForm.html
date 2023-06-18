@@ -1,0 +1,388 @@
+<% layout('/layouts/default.html', {title: '高程——测站管理', libs: ['validate']}){ %>
+<div class="main-content" xmlns:v-on="http://www.w3.org/1999/xhtml">
+	<div class="box box-main">
+		<div class="box-header with-border">
+			<div class="box-title">
+				<i class="fa icon-note"></i> ${text(eLStation.isNewRecord ? '新增高程——测站链' : '编辑高程——测站链')}
+			</div>
+			<div class="box-tools pull-right">
+				<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+			</div>
+		</div>
+		<#form:form id="inputForm" model="${eLStation}" action="${ctx}/el_station/eLStation/save" method="post" class="form-horizontal">
+			<div class="box-body">
+				<div class="form-unit">${text('基本信息')}</div>
+				<#form:hidden path="id"/>
+				<div class="row">
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group">
+								<label class="control-label col-sm-2" title="">
+									<span class="required ">*</span> ${text('小组')}：<i class="fa icon-question hide"></i></label>
+								<div class="col-sm-5">
+									<#form:select path="group.id" id="group_id"
+									items="${groupList}" itemLabel="groupName" itemValue="id"
+									dictType="" blankOption="true" class="form-control required" />
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group">
+								<label class="control-label col-sm-2" title="">
+									<span class="required ">*</span> ${text('导线')}：<i class="fa icon-question hide"></i></label>
+								<div class="col-sm-5">
+									<#form:select path="lineId" id="line_id"
+									items="${lineList}" itemLabel="lineName" itemValue="id"
+									dictType="" blankOption="true" class="form-control required" />
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!--————————————————————————————————————————————————————————————————————————-->
+					<!--2022年5月9日 su添加-->
+					<div class="row" style="display: block">
+						<div class="col-xs-12">
+							<div class="form-group station_label">
+								<label class="control-label col-sm-2" title="">
+									<span class="required ">*</span> ${text('测站链')}：<i class="fa icon-question hide"></i></label>
+								<div class="col-sm-10">
+									<div id="line_form">
+										<div class="staion_title">
+											中间测站数：
+											<button class="btn-operate-station" v-on:click="operateStation(-1)" type="button">-</button>
+											<input v-model="num_staion_middle" type="number" min="0" max="50"
+												   oninput="if (value < 0) value = 0;if(value>50)value=50"
+												   onkeypress="return event.charCode >= 48" readonly>
+											<button class="btn-operate-station" v-on:click="operateStation(1)" type="button">+</button>
+										</div>
+										<div class="staion_wrap">
+											<div class="staion_content" v-for="sta in all_staions">
+												<div><span>{{sta.title}}</span><input placeholder="请输入测站名称" v-model="sta.name"></div>
+												<span class="connect-line">———></span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--————————————————————————————————————————————————————————————————————————-->
+
+					<!--<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group">
+								<label class="control-label col-sm-2" title="">
+									<span class="required ">*</span> ${text('测站名称')}：<i class="fa icon-question hide"></i></label>
+								<div class="col-sm-5">
+									<#form:input id="station_id" v-model="stationName" path="stationName" placeholder="请输入测站名称" maxlength="20" class="form-control required"/>
+								</div>
+							</div>
+						</div>
+					</div>-->
+					<div class="row">
+						<div class="col-xs-12">
+							<div class="form-group">
+								<label class="control-label col-sm-2" title="">
+									<span class="required hide">*</span> ${text('备注信息')}：<i class="fa icon-question hide"></i></label>
+								<div class="col-sm-10">
+									<#form:textarea path="remarks" rows="4" maxlength="500" class="form-control"/>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="box-footer">
+				<div class="row">
+					<div class="col-sm-offset-2 col-sm-10">
+						<% if (hasPermi('el_station:eLStation:edit')){ %>
+							<button type="submit" class="btn btn-sm btn-primary" id="btnSubmit"><i class="fa fa-check"></i> ${text('保 存')}</button>&nbsp;
+						<% } %>
+						<button type="button" class="btn btn-sm btn-default" id="btnCancel" onclick="js.closeCurrentTabPage()"><i class="fa fa-reply-all"></i> ${text('关 闭')}</button>
+					</div>
+				</div>
+			</div>
+		</#form:form>
+	</div>
+</div>
+<% } %>
+<!--————————————————————————————————————————————————————————————————————————-->
+<!--2022年5月17日 su添加-->
+<style>
+	.station_label {
+		margin-bottom: 0;
+		/*background-color: deepskyblue;*/
+	}
+	#line_form {
+		/*background-color: red;*/
+		/*text-align: center;*/
+		/*margin-left: 200px;*/
+		font-size: 16px;
+		/*position: relative;*/
+	}
+	#line_form input:focus {
+		border: 1px solid #66afe9;
+	}
+	.staion_title {
+		/*margin-top: 10px;*/
+		/*position: relative;*/
+		/*position: absolute;*/
+		/*top: -25px;*/
+		display: flex;
+		align-items: center;
+	}
+	.staion_title input {
+		width: 40px;
+		margin: 0 5px;
+		text-align: center;
+		/*border: 1px solid #caced6;*/
+		border: none;
+		border-radius: 5px;
+		outline: none;
+		-moz-appearance: textfield;
+	}
+	.staion_title input:focus {
+		border: none !important;
+	}
+	.staion_title input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+	}
+	.staion_title .btn-operate-station {
+		/*position: absolute;*/
+		/*left: 50%;*/
+		/*transform: translateX(30%);*/
+		/*top: 0;*/
+		color: white;
+		font-size: 22px;
+		font-weight: bold;
+		height: 28px;
+		width: 28px;
+		border-radius: 5px;
+		background-color: #1890ff;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		border: none;
+		outline: none;
+	}
+	.staion_title .btn-operate-station:focus {
+		border-radius: 5px;
+	}
+	.staion_wrap {
+		padding-top: 5px;
+		/*margin-top: 30px;*/
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+	}
+	.staion_wrap .staion_content {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		/*background-color: red;*/
+	}
+	.staion_wrap .staion_content:last-child .connect-line {
+		display: none;
+	}
+	/*.staion_wrap .staion_content .staion_middle {
+		!*display: flex;*!
+		!*justify-content: center;*!
+		!*align-items: center;*!
+		!*font-weight: normal;*!
+		!*margin: 0;*!
+		!*padding: 0;*!
+		!*border: 0;*!
+	}*/
+	.staion_wrap .staion_content div {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 10px;
+		/*background-color: #00a0e9;*/
+	}
+	.staion_wrap .staion_content div span {
+		background-color: #ccc;
+		border-radius: 5px;
+		padding: 5px;
+		border: 1px dashed;
+	}
+	.staion_wrap .staion_content .connect-line {
+		margin-top: 35px;
+		/*background-color: #00a157;*/
+	}
+	.staion_wrap .staion_content input {
+		margin-top: 10px;
+		width: 150px;
+		text-align: center;
+		border-radius: 10px;
+		border: 1px solid #caced6;
+		height: 36px;
+		outline: none;
+	}
+</style>
+<!--引入Vue.js-->
+<script src="${ctxStatic}/vue/vue.min.js"></script>
+<script>
+	const vm = new Vue({
+		el: "#inputForm",
+		data: {
+			num_staion_middle: 0,
+			all_staions: [
+				{
+					// id: 0,
+					title: "起始测站",
+					name: ""
+				},
+				/*{
+                    id: 1,
+                    title: "测站1",
+                    name: ""
+                },*/
+				{
+					// id: 999,
+					title: "终点测站",
+					name: ""
+				},
+			]
+		},
+		computed: {
+			stationsStr() {
+				var s = ''
+				this.all_staions.forEach(v => {
+					s = s + v.name + ','
+				})
+				return s
+			}
+		},
+		methods: {
+			operateStation: function (opt) {
+				// console.log(opt)
+				// this.num_staion_middle = parseInt(this.num_staion_middle)
+				if (opt === 1) {	// 加
+					if (this.num_staion_middle < 30) {
+						this.num_staion_middle = this.num_staion_middle + opt
+						this.all_staions.splice(this.num_staion_middle, 0, {
+							title: "测站" + this.num_staion_middle,
+							name: ""
+						})
+					}
+				} else {			// 减
+					if (this.num_staion_middle > 0) {
+						this.all_staions.splice(this.num_staion_middle, 1)
+						this.num_staion_middle = this.num_staion_middle + opt
+					}
+				}
+			}
+		}
+	})
+</script>
+<!--————————————————————————————————————————————————————————————————————————-->
+<script>
+$("#inputForm").validate({
+	submitHandler: function(form){
+		/*js.ajaxSubmitForm($(form), function(data){
+			js.showMessage(data.message);
+			if(data.result == Global.TRUE){
+				js.closeCurrentTabPage(function(contentWindow){
+					contentWindow.page();
+				});
+			}
+		}, "json");*/
+		// 校验表单是否为空
+		var flag = true
+		vm.all_staions.forEach(v => {
+			if (v.name === '') {
+				js.showMessage('请输入' + v.title + '名称', '', 'error');
+				flag = false
+			}
+		})
+		if (!flag) {
+			return
+		}
+
+		// 校验测站名是否重复
+		flag = true
+		let station_name_arr = []
+		try {
+			vm.all_staions.forEach(v => {
+				if (station_name_arr.includes(v.name)) {
+					js.showMessage(v.title + '的名称与'
+							+ vm.all_staions[station_name_arr.indexOf(v.name)].title + '的名称重复',
+							'', 'error');
+					flag = false
+					throw Error()
+				}
+				station_name_arr.push(v.name)
+			})
+		} catch (e) {
+			//	无操作
+		}
+		if (!flag) {
+			return
+		}
+
+		var lineId = document.getElementById("line_id").value;
+		// 校验该导线是否已创建过测站链
+		$.get("${ctx}/el_station/eLStation/findOriginEndStaByLineId?lineId=" + lineId, function (result) {
+			var stationList = result.ELStationList;
+
+			if (stationList[0] !== '') {
+				js.showMessage('该导线已经创建过测站链啦，请换一条导线');
+			} else {
+				$.post('${ctx}/el_station/eLStation/save',
+					{
+						lineId: lineId,
+						stationsStr: vm.stationsStr
+					},
+					function (res) {
+						js.showMessage(res.message);
+						if (res.result === Global.TRUE) {
+							js.closeCurrentTabPage(function (contentWindow) {
+								contentWindow.page()
+							})
+						}
+					}).error(function (err) {
+						console.log("错误：", err)
+						alert("错误：\n" + err.responseText)
+					})
+			}
+		});
+
+		/*$.post('${ctx}/el_station/eLStation/save',
+				{
+					lineId: lineId,
+					stationsStr: vm.stationsStr
+				},
+				function (res) {
+					js.showMessage(res.message);
+					if(res.result === Global.TRUE) {
+						js.closeCurrentTabPage(function (contentWindow) {
+							contentWindow.page()
+						})
+					}
+				}).error(function (err) {
+					console.log("错误：", err)
+			alert("错误：\n" + err.responseText)
+		})*/
+    }
+});
+
+// 查询导线 2022年5月17日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/el_line/eLLine/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.ELLineList;
+		// 给导线下拉框添加选项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

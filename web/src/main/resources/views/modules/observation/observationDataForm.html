@@ -1,0 +1,395 @@
+<% layout('/layouts/default.html', {title: '观测数据管理', libs: ['validate']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header with-border">
+			<div class="box-title">
+				<i class="fa icon-note"></i> ${text(observationData.isNewRecord ? '新增观测数据' : '编辑观测数据')}
+			</div>
+			<div class="box-tools pull-right">
+				<button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+			</div>
+		</div>
+		<#form:form id="inputForm" model="${observationData}" action="${ctx}/observation/observationData/save" method="post" class="form-horizontal">
+			<!--————————————————————————————————————————————————————————————————————————-->
+			<!--2022年6月20日 su修改-->
+			<div class="box-body">
+				<div class="form-unit">${text('基本信息')} （<span style="color: crimson">请按
+					<strong style="color: red">左角</strong>
+					的方式录入数据</span>）</div>
+				<#form:hidden path="id"/>
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('小组')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="group.id" id="group_id"
+								items="${groupList}" itemLabel="groupName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('导线')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="line.id" id="line_id"
+								items="${lineList}" itemLabel="lineName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后视站点')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:hidden path="backStnId" id="backStn_id" class="form-control required"/>
+								<#form:input id="backStn_name" disabled="true" class="form-control required"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span><span style="color: #00a0e9; font-weight: bold"> ${text('测站')}</span>：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:select path="stationId" id="station_id"
+								items="${stationList}" itemLabel="stationName" itemValue="id"
+								dictType="" blankOption="true" class="form-control required" />
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前视站点')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:hidden path="foreStnId" id="foreStn_id" class="form-control required"/>
+								<#form:input id="foreStn_name" disabled="true" class="form-control required"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前左度')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreLeftDeg" placeholder="请输入前视盘左读数的度" maxlength="3"
+								class="form-control required integerDegree"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前左分')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreLeftMin" placeholder="请输入前视盘左读数的分" maxlength="2"
+								class="form-control required integerMinute"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前左秒')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreLeftSec" placeholder="请输入前视盘左读数的秒" maxlength="4"
+								class="form-control required doubleSecond"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前右度')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreRightDeg" placeholder="请输入前视盘右读数的度" maxlength="3"
+								class="form-control required integerDegree"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前右分')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreRightMin" placeholder="请输入前视盘右读数的分" maxlength="2"
+								class="form-control required integerMinute"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前右秒')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreRightSec" placeholder="请输入前视盘右读数的秒" maxlength="4"
+								class="form-control required doubleSecond"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后左度')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backLeftDeg" placeholder="请输入后视盘左读数的度" maxlength="3"
+								class="form-control required integerDegree"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后左分')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backLeftMin" placeholder="请输入后视盘左读数的分" maxlength="2"
+								class="form-control required integerMinute"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后左秒')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backLeftSec" placeholder="请输入后视盘左读数的秒" maxlength="4"
+								class="form-control required doubleSecond"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后右度')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backRightDeg" placeholder="请输入后视盘右读数的度" maxlength="3"
+								class="form-control required integerDegree"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后右分')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backRightMin" placeholder="请输入后视盘右读数的分" maxlength="2"
+								class="form-control required integerMinute"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后右秒')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backRightSec" placeholder="请输入后视盘右读数的秒" maxlength="4"
+								class="form-control required doubleSecond"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('前视平距(m)')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="foreDistance" id="fore_distance"
+								placeholder="请输入当前测站到前站的平距"
+								class="form-control required double4decimal"/>
+							</div>
+						</div>
+					</div>
+					<div class="col-xs-4">
+						<div class="form-group">
+							<label class="control-label col-sm-4" title="">
+								<span class="required ">*</span> ${text('后视平距(m)')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-8">
+								<#form:input path="backDistance" id="back_distance"
+								placeholder="请输入当前测站到后站的平距"
+								class="form-control required double4decimal"/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="col-xs-8">
+						<div class="form-group">
+							<label class="control-label col-sm-2" title="">
+								<span class="required hide">*</span> ${text('备注信息')}：<i class="fa icon-question hide"></i></label>
+							<div class="col-sm-10">
+								<#form:textarea path="remarks" rows="4" maxlength="500" class="form-control"/>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="box-footer">
+				<div class="row">
+					<div class="col-xs-8">
+						<div class="col-sm-offset-2 col-sm-10">
+							<% if (hasPermi('observation:observationData:edit')){ %>
+								<button type="submit" class="btn btn-sm btn-primary" id="btnSubmit"><i class="fa fa-check"></i> ${text('保 存')}</button>&nbsp;
+							<% } %>
+							<button type="button" class="btn btn-sm btn-default" id="btnCancel" onclick="js.closeCurrentTabPage()"><i class="fa fa-reply-all"></i> ${text('关 闭')}</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!--————————————————————————————————————————————————————————————————————————-->
+
+		</#form:form>
+	</div>
+</div>
+<% } %>
+<script>
+$("#inputForm").validate({
+	submitHandler: function(form){
+		js.ajaxSubmitForm($(form), function(data){
+			js.showMessage(data.message);
+			if(data.result == Global.TRUE){
+				js.closeCurrentTabPage(function(contentWindow){
+					contentWindow.page();
+				});
+			}
+		}, "json");
+    }
+});
+
+// 编辑观测数据时，显示前后站的名称。
+// 2022年6月23日 su添加
+var foreStnId = $('#foreStn_id').val()
+if (foreStnId === '' || foreStnId === '0') {
+	if (foreStnId === '0') {
+		$('#foreStn_name').val('无')
+	}
+} else {
+	$.get("${ctx}/station/station/getStaByStaId?stationId=" + foreStnId, function (result) {
+		const station = result.station
+		var stationName = station.stationName
+		$('#foreStn_name').val(stationName)
+	});
+}
+var backStnId = $('#backStn_id').val()
+if (backStnId === '' || backStnId === '0') {
+	if (backStnId === '0') {
+		$('#backStn_name').val('无')
+	}
+} else {
+	$.get("${ctx}/station/station/getStaByStaId?stationId=" + backStnId, function (result) {
+		const station = result.station
+		var stationName = station.stationName
+		$('#backStn_name').val(stationName)
+	});
+}
+
+// 查询导线 2022年3月14日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+
+// 查询测站 2022年3月14日 su添加
+$("#line_id").change(function () {
+	var stnSelect = document.getElementById("station_id");
+	// 需要先把测站下拉框置空
+	$("#station_id").empty();
+	//导线下拉框改变时发送请求到后台查询对应导线下的测站
+	$.get("${ctx}/station/station/findStationListByLineId?lineId=" + this.value, function (result) {
+		var stationList = result.stationList;
+		// 给测站下拉框添加选项
+		// 空白项
+		stnSelect.options.add(new Option('', ''));
+		// 其他项
+		stationList.forEach(function (station) {
+			stnSelect.options.add(new Option(station.stationName, station.id));
+		});
+	});
+});
+
+// 查询测站的前后站 2022年5月23日 su添加
+$("#station_id").change(function () {
+	var foreStnId = document.getElementById("foreStn_id");
+	var foreStnName = document.getElementById("foreStn_name");
+	var backStnId = document.getElementById("backStn_id");
+	var backStnName = document.getElementById("backStn_name");
+	// 清空平距的input框并解除限制
+	$('#fore_distance').val('')
+	$('#back_distance').val('')
+	$('#fore_distance').removeAttr("readonly")
+	$('#back_distance').removeAttr("readonly")
+
+
+	//导线下拉框改变时发送请求到后台查询对应导线下的测站
+	$.get("${ctx}/station/station/findForeBackStaByStaId?stationId=" + this.value, function (result) {
+		var stationList = result.stationList;
+
+		if (stationList.length === 0) {
+			foreStnId.value = ''
+			foreStnName.value = ''
+			backStnId.value = ''
+			backStnName.value = ''
+		} else {
+			var foreStation = stationList[0]
+			var backStation = stationList[1]
+
+			// 如果没有前站
+			if (foreStation === '') {
+				foreStnId.value = '0'
+				foreStnName.value = '无'
+				// 给前视平距赋值0
+				$('#fore_distance').val(0)
+				$('#fore_distance').attr("readonly","readonly")
+			} else {
+				foreStnId.value = foreStation.id
+				foreStnName.value = foreStation.stationName
+			}
+			// 如果没有后站
+			if (backStation === '') {
+				backStnId.value = '0'
+				backStnName.value = '无'
+				// 给后视平距赋值0
+				$('#back_distance').val(0)
+				$('#back_distance').attr("readonly","readonly")
+			} else {
+				backStnId.value = backStation.id
+				backStnName.value = backStation.stationName
+			}
+		}
+	});
+});
+</script>

@@ -1,0 +1,142 @@
+<% layout('/layouts/default.html', {title: '起始数据管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('起始数据管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('origin:originData:edit')){ %>
+					<a href="${ctx}/origin/originData/form" class="btn btn-default btnTool" title="${text('新增起始数据')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${originData}" action="${ctx}/origin/originData/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+			<!--————————————————————————————————————————————————————————————————————————-->
+			<!--2022年3月11日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+			<!--————————————————————————————————————————————————————————————————————————-->
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年3月11日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u5.group_name', width:100, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u4.line_name', width:100, align:"center"},
+
+		{header:'${text("测站名")}', name:'originStation.stationName', index:'u2.station_name', width:100, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/origin/originData/form?id='+row.id+'" class="btnList" data-title="${text("编辑起始数据")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("°")}', name:'originAzimuthDeg', index:'a.origin_azimuth_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'originAzimuthMin', index:'a.origin_azimuth_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'originAzimuthSec', index:'a.origin_azimuth_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("X")}', name:'originCoordX', index:'a.origin_coord_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'originCoordY', index:'a.origin_coord_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("测站名")}', name:'endStation.stationName', index:'u3.station_name', width:100, align:"center", frozen:true, formatter: function(val, obj, row, act){
+				return '<a href="${ctx}/origin/originData/form?id='+row.id+'" class="btnList" data-title="${text("编辑起始数据")}">'+(val||row.id)+'</a>';
+			}},
+		{header:'${text("°")}', name:'endAzimuthDeg', index:'a.end_azimuth_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'endAzimuthMin', index:'a.end_azimuth_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'endAzimuthSec', index:'a.end_azimuth_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("X")}', name:'endCoordX', index:'a.end_coord_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'endCoordY', index:'a.end_coord_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('origin:originData:edit')){ %>
+				actions.push('<a href="${ctx}/origin/originData/form?id='+row.id+'" class="btnList" title="${text("编辑起始数据")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				// actions.push('<a href="${ctx}/origin/originData/delete?id='+row.id+'" class="btnList" title="${text("删除起始数据")}" data-confirm="${text("确认要删除该起始数据吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年4月5日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+	},
+	// 设置多级表头 2022年3月11日 su添加
+	groupHeaders: {
+		twoLevel:[
+			{startColumnName: 'originAzimuthDeg', numberOfColumns: 3, titleText: '方位角'},
+			{startColumnName: 'originCoordX', numberOfColumns: 2, titleText: '坐标(m)'},
+			{startColumnName: 'endAzimuthDeg', numberOfColumns: 3, titleText: '方位角'},
+			{startColumnName: 'endCoordX', numberOfColumns: 2, titleText: '坐标(m)'},
+		],
+		threeLevel: [
+			{startColumnName: 'originStation.stationName', numberOfColumns: 6, titleText: '起始测站数据'},
+			{startColumnName: 'endStation.stationName', numberOfColumns: 6, titleText: '终点测站数据'},
+		]
+	}
+});
+
+// 查询导线 2022年3月11日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

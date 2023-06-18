@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.jeesite</groupId>
+		<artifactId>jeesite-parent</artifactId>
+		<version>4.1.9-SNAPSHOT</version>
+		<relativePath>../parent/pom.xml</relativePath>
+	</parent>
+
+	<artifactId>traverse-calculation</artifactId>
+	<packaging>war</packaging>
+
+	<name>Traverse Calculation</name>
+	<url>http://jeesite.com</url>
+	<inceptionYear>2013-Now</inceptionYear>
+
+	<properties>
+
+		<finalName>${project.artifactId}-V1.4.4</finalName><!-- war包的名称 ${project.artifactId} -->
+		<start-class>com.jeesite.modules.Application</start-class>
+
+		<!-- environment setting -->
+		<eclipse-plugin-download-sources>false</eclipse-plugin-download-sources>
+		<eclipse-plugin-download-javadocs>false</eclipse-plugin-download-javadocs>
+
+		<!-- docker service -->
+		<docker.registryUrl>http://192.168.56.102:2375</docker.registryUrl>
+		<docker.imageName>${project.groupId}/${project.artifactId}:4.1</docker.imageName>
+
+	</properties>
+
+	<dependencies>
+
+		<!-- 核心模块 -->
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>jeesite-module-core</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<!-- 在线API文档 -->
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>jeesite-module-swagger</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<!-- Office在线预览 -->
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>jeesite-module-weboffice</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<!-- 文件管理
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>jeesite-module-filemanager</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency> -->
+
+		<!-- Spring Boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- 自定义jar依赖包演示
+		<dependency>
+			<groupId>com.jeesite</groupId>
+			<artifactId>test-core</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/src/main/webapp/WEB-INF/lib/test-core-1.0.jar</systemPath>
+		</dependency> -->
+
+		<!--2022年3月29日 su添加-->
+		<!--Jama是一个基本的线性代数java包。包括一个基本的Matrix类和5个矩阵分解类。-->
+		<dependency>
+			<groupId>gov.nist.math</groupId>
+			<artifactId>jama</artifactId>
+			<version>1.0.3</version>
+		</dependency>
+
+		<!--2022年4月6日 su添加-->
+		<!--iText是著名的开放源码的站点sourceforge一个项目，是用于生成PDF文档的一个java类库。-->
+		<!--通过iText不仅可以生成PDF或rtf的文档，而且可以将XML、Html文件转化为PDF文件。-->
+		<!-- https://mvnrepository.com/artifact/com.itextpdf/itextpdf -->
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itextpdf</artifactId>
+			<version>5.5.13.3</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.itextpdf.tool/xmlworker -->
+		<dependency>
+			<groupId>com.itextpdf.tool</groupId>
+			<artifactId>xmlworker</artifactId>
+			<version>5.5.13.3</version>
+		</dependency>
+
+		<!--模板引擎支持-->
+		<!-- https://mvnrepository.com/artifact/org.freemarker/freemarker -->
+		<dependency>
+			<groupId>org.freemarker</groupId>
+			<artifactId>freemarker</artifactId>
+			<version>2.3.31</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.littlenb/snowflake -->
+		<dependency>
+			<groupId>com.littlenb</groupId>
+			<artifactId>snowflake</artifactId>
+			<version>1.0.5</version>
+		</dependency>
+
+		<!--MySQL驱动器-->
+		<!--<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.47</version>
+		</dependency>-->
+
+	</dependencies>
+
+	<build>
+		<finalName>${finalName}</finalName>
+		<outputDirectory>${project.basedir}/src/main/webapp/WEB-INF/classes/</outputDirectory>
+		<plugins>
+
+			<!-- Spring Boot -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<includeSystemScope>true</includeSystemScope>
+				</configuration>
+			</plugin>
+			<!-- <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+			</plugin> -->
+
+			<!-- 打包插件, war包名称不带版本号 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<!-- <packagingExcludes></packagingExcludes>
+					<warSourceExcludes></warSourceExcludes> -->
+					<webappDirectory>${project.build.directory}/${project.artifactId}</webappDirectory>
+					<warName>${finalName}</warName>
+					<archive>
+						<addMavenDescriptor>false</addMavenDescriptor>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<!-- Eclipse 插件 -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<configuration>
+					<downloadSources>${eclipse-plugin-download-sources}</downloadSources>
+					<downloadJavadocs>${eclipse-plugin-download-javadocs}</downloadJavadocs>
+					<wtpContextName>${finalName}</wtpContextName>
+					<wtpversion>2.0</wtpversion>
+					<jeeversion>6.0</jeeversion>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+
+	<profiles>
+		<!-- Docker 插件 -->
+		<profile>
+			<id>docker</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>docker-maven-plugin</artifactId>
+						<version>1.1.0</version>
+						<configuration>
+							<serverId>docker-hub</serverId>
+							<registryUrl>${docker.registryUrl}</registryUrl>
+							<dockerHost>${docker.registryUrl}</dockerHost>
+							<imageName>${docker.imageName}</imageName>
+							<dockerDirectory>${project.basedir}/bin/docker</dockerDirectory>
+							<resources>
+								<resource>
+									<targetPath>/</targetPath>
+									<directory>${project.build.directory}</directory>
+									<include>web.war</include>
+								</resource>
+							</resources>
+							<forceTags>true</forceTags>
+							<pushImage>false</pushImage>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+	<developers>
+		<developer>
+			<id>thinkgem</id>
+			<name>WangZhen</name>
+			<email>thinkgem at 163.com</email>
+			<roles><role>Project lead</role></roles>
+			<timezone>+8</timezone>
+		</developer>
+	</developers>
+
+	<organization>
+		<name>JeeSite</name>
+		<url>http://jeesite.com</url>
+	</organization>
+
+	<repositories>
+		<repository>
+			<id>aliyun-repos</id>
+			<url>https://maven.aliyun.com/repository/public</url>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+		</repository>
+		<repository>
+			<id>jeesite-repos</id>
+			<url>http://maven.jeesite.net/repository/maven-public</url>
+		</repository>
+	</repositories>
+	<pluginRepositories>
+		<pluginRepository>
+			<id>aliyun-repos</id>
+			<url>https://maven.aliyun.com/repository/public</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+</project>

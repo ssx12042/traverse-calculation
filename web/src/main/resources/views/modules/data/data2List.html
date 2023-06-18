@@ -1,0 +1,77 @@
+<% layout('/layouts/default.html', {title: 'data_2管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('data_2管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('data:data2:edit')){ %>
+					<a href="${ctx}/data/data2/form" class="btn btn-default btnTool" title="${text('新增data_2')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${data2}" action="${ctx}/data/data2/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("创建者")}', name:'createBy', index:'a.create_by', width:150, align:"center"},
+		{header:'${text("创建时间")}', name:'createDate', index:'a.create_date', width:150, align:"center"},
+		{header:'${text("更新者")}', name:'updateBy', index:'a.update_by', width:150, align:"center"},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('el_station:eLStation:edit')){ %>
+				actions.push('<a href="${ctx}/el_station/eLStation/editForm?id='+row.id+'" class="btnList" title="${text("编辑高程——测站")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/el_station/eLStation/delete?id='+row.id+'" class="btnList" title="${text("删除高程——测站链")}"' +
+						' data-confirm="${text("确认要删除该高程——测站链吗？（这将会删除整条测站链以及该链上所有的数据，包括起始数据、观测数据等等！！！）")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){// 2022年5月17日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据小组名称来合并导线名称
+		MergerRowspanToOther("dataGrid", 'group.groupName', 'line.lineName');
+	}
+});
+// 点击小组下拉框选项之后，查询导线下拉框
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

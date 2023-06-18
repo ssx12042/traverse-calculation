@@ -1,0 +1,176 @@
+<% layout('/layouts/default.html', {title: '数据解算管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('数据解算管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('data_solution:dataSolution:edit')){ %>
+					<a href="${ctx}/data_solution/dataSolution/form" class="btn btn-default btnTool" title="${text('新增数据解算')}"><i class="fa fa-plus"></i> ${text('数据解算')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${dataSolution}" action="${ctx}/data_solution/dataSolution/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年3月15日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<!--————————————————————————————————————————————————————————————————————————-->
+
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('解算时间')}：</label>
+					<div class="control-inline">
+						<!--<#form:input path="solutionDate" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>-->
+						<#form:input path="solutionDate" maxlength="20" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<!--引入公共js代码 2022年5月17日 su添加-->
+<script src="${ctxStatic}/common/common.js"></script>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年3月15日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u6.group_name', width:70, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u5.line_name', width:70, align:"center"},
+
+		{header:'${text("后视站点")}', name:'backStn.stationName', index:'u4.station_name', width:70, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测站")}', name:'station.stationName', index:'u2.station_name', width:70, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return "<span style='color: dodgerblue'>" + val + "</span>";
+		}},
+		{header:'${text("前视站点")}', name:'foreStn.stationName', index:'u3.station_name', width:70, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("平均平距(m)(前视)")}', name:'avgDistance', index:'a.avg_distance', width:90, align:"center", formatter: function(val, obj, row, act){
+			if (val === 0.) {
+				return "无"
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'avgValueDeg', index:'a.avg_value_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'avgValueMin', index:'a.avg_value_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'avgValueSec', index:'a.avg_value_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'azimuthAngDeg', index:'a.azimuth_ang_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'azimuthAngMin', index:'a.azimuth_ang_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'azimuthAngSec', index:'a.azimuth_ang_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("X")}', name:'finalCoordX', index:'a.final_coord_x', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("Y")}', name:'finalCoordY', index:'a.final_coord_y', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:300, align:"center"}
+		// 不需要操作 2022年3月15日 su修改
+		/*,
+		{header:'${text("操作")}', name:'actions', width:120, sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('data_solution:dataSolution:edit')){ %>
+				actions.push('<a href="${ctx}/data_solution/dataSolution/form?id='+row.id+'" class="btnList" title="${text("编辑数据解算")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}*/
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年3月15日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据小组名称来合并导线名称
+		// MergerRowspanToOther("dataGrid", 'group.groupName', 'line.lineName');
+		// 根据导线来合并解算时间
+		MergerRowspanToOther("dataGrid", 'line.lineName', 'solutionDate');
+		// 根据解算时间来合并导线名称
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'line.lineName');
+		// 根据解算时间来合并状态
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'status');
+	},
+	// 设置多级表头
+	groupHeaders: {
+		twoLevel:[
+			{startColumnName: 'avgValueDeg',numberOfColumns:3,titleText: '各测回平均角值'},
+			{startColumnName: 'azimuthAngDeg',numberOfColumns:3,titleText:'方位角(前视)'},
+			{startColumnName: 'finalCoordX',numberOfColumns:2,titleText: '结果坐标(m)'},
+		]
+	}
+});
+
+// 查询导线 2022年3月15日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

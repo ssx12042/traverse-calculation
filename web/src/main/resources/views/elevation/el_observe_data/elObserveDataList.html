@@ -1,0 +1,250 @@
+<% layout('/layouts/default.html', {title: '高程——观测数据管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('高程——观测数据管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('el_observe_data:elObserveData:edit')){ %>
+					<a href="${ctx}/el_observe_data/elObserveData/form" class="btn btn-default btnTool" title="${text('新增高程——观测数据')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${elObserveData}" action="${ctx}/el_observe_data/elObserveData/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年5月23日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('解算时间')}：</label>
+					<div class="control-inline">
+						<!--<#form:input path="solutionDate" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>-->
+						<#form:input path="solutionDate" maxlength="20" class="form-control"/>
+					</div>
+				</div>
+				<!--————————————————————————————————————————————————————————————————————————-->
+
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<!--引入公共js代码 2022年5月23日 su添加-->
+<script src="${ctxStatic}/common/common.js"></script>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年5月23日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u6.group_name', width:100, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u5.line_name', width:100, align:"center"},
+
+		{header:'${text("后视站点")}', name:'backStn.stationName', index:'u4.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测站")}', name:'station.stationName', index:'u2.station_name', width:100, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/el_observe_data/elObserveData/form?id='+row.id+'" class="btnList" data-title="${text("编辑高程——观测数据")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("前视站点")}', name:'foreStn.stationName', index:'u3.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测回")}', name:'observeRound', index:'a.observe_round', width:50, align:"center"},
+
+		//---------前视
+		{header:'${text("仪器高(m)")}', name:'heightInstrumentFore', index:'a.height_instrument_fore', width:80, align:"center", formatter: function(val, obj, row, act){
+			// 如果为999，则显示为 '无'
+			if (val === 999) {
+				return '无'
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有前站，则合并观测前站的列
+			if (row.foreStnId === '0') {
+				return ' colspan=6'
+			}
+		}},
+		{header:'${text("镜高(m)")}', name:'heightLensFore', index:'a.height_lens_fore', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有前站，被合并的列需要隐藏
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("°")}', name:'verticalAngDegForeStr', index:'a.vertical_ang_deg_fore_str', width:50, align:"center", formatter: function(val, obj, row, act){
+			return val
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("′")}', name:'verticalAngMinFore', index:'a.vertical_ang_min_fore', width:50, align:"center", cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("″")}', name:'verticalAngSecFore', index:'a.vertical_ang_sec_fore', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("平距(m)")}', name:'distanceFore', index:'a.distance_fore', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+
+		//---------后视
+		{header:'${text("仪器高(m)")}', name:'heightInstrumentBack', index:'a.height_instrument_back', width:80, align:"center", formatter: function(val, obj, row, act){
+			// 如果为999，则显示为 '无'
+			if (val === 999) {
+				return '无'
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' colspan=6'
+			}
+		}},
+		{header:'${text("镜高(m)")}', name:'heightLensBack', index:'a.height_lens_back', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有前站，被合并的列需要隐藏
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("°")}', name:'verticalAngDegBackStr', index:'a.vertical_ang_deg_back_str', width:50, align:"center", formatter: function(val, obj, row, act){
+			return val
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("′")}', name:'verticalAngMinBack', index:'a.vertical_ang_min_back', width:50, align:"center", cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("″")}', name:'verticalAngSecBack', index:'a.vertical_ang_sec_back', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("平距(m)")}', name:'distanceBack', index:'a.distance_back', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('el_observe_data:elObserveData:edit')){ %>
+				actions.push('<a href="${ctx}/el_observe_data/elObserveData/form?id='+row.id+'" class="btnList" title="${text("编辑高程——观测数据")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/el_observe_data/elObserveData/delete?id='+row.id+'" class="btnList" title="${text("删除高程——观测数据")}" data-confirm="${text("确认要删除该高程——观测数据吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年5月23日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据导线来合并解算时间
+		MergerRowspanToOther("dataGrid", 'line.lineName', 'solutionDate');
+		// 根据解算时间来合并导线名称
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'line.lineName');
+		// 根据解算时间来合并状态
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'status');
+	},
+	// 设置多级表头
+	groupHeaders: {
+		twoLevel:[
+			{startColumnName: 'verticalAngDegForeStr',numberOfColumns:3,titleText: '垂直角'},
+			{startColumnName: 'verticalAngDegBackStr',numberOfColumns:3,titleText: '垂直角'},
+		],
+		threeLevel:[
+			{startColumnName: 'heightInstrumentFore',numberOfColumns:6,titleText:'观测前站'},
+			{startColumnName: 'heightInstrumentBack',numberOfColumns:6,titleText:'观测后站'},
+		]
+	}
+});
+
+// 查询导线 2022年5月23日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/el_line/eLLine/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.ELLineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

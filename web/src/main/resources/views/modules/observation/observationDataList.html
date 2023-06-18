@@ -1,0 +1,246 @@
+<% layout('/layouts/default.html', {title: '观测数据管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('观测数据管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('根据条件查询数据')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('observation:observationData:edit')){ %>
+					<a href="${ctx}/observation/observationData/form" class="btn btn-default btnTool" title="${text('新增观测数据')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${observationData}" action="${ctx}/observation/observationData/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+			<!--————————————————————————————————————————————————————————————————————————-->
+			<!--2022年3月14日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('测站')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="station.id" id="station_id"
+						items="${stationList}" itemLabel="stationName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+			<!--————————————————————————————————————————————————————————————————————————-->
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('解算时间')}：</label>
+					<div class="control-inline">
+						<!--<#form:input path="solutionDate" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>-->
+						<#form:input path="solutionDate" maxlength="20" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<!--引入公共js代码 2022年5月17日 su添加-->
+<script src="${ctxStatic}/common/common.js"></script>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年3月14日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u6.group_name', width:100, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u5.line_name', width:100, align:"center"},
+
+		{header:'${text("后视站点")}', name:'backStn.stationName', index:'u4.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测站")}', name:'station.stationName', index:'u2.station_name', width:100, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/observation/observationData/form?id='+row.id+'" class="btnList" data-title="${text("编辑观测数据")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("前视站点")}', name:'foreStn.stationName', index:'u3.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测回")}', name:'observationRound', index:'a.observation_round', width:50, align:"center"},
+		{header:'${text("°")}', name:'foreLeftDeg', index:'a.fore_left_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'foreLeftMin', index:'a.fore_left_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'foreLeftSec', index:'a.fore_left_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'foreRightDeg', index:'a.fore_right_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'foreRightMin', index:'a.fore_right_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'foreRightSec', index:'a.fore_right_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'backLeftDeg', index:'a.back_left_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'backLeftMin', index:'a.back_left_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'backLeftSec', index:'a.back_left_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'backRightDeg', index:'a.back_right_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'backRightMin', index:'a.back_right_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'backRightSec', index:'a.back_right_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("前视")}', name:'foreDistance', index:'a.fore_distance', width:80, align:"center", formatter: function(val, obj, row, act){
+			if (val === 0.) {
+				return "无"
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("后视")}', name:'backDistance', index:'a.back_distance', width:80, align:"center", formatter: function(val, obj, row, act){
+			if (val === 0.) {
+				return "无"
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'halfLeftDeg', index:'a.half_left_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'halfLeftMin', index:'a.half_left_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'halfLeftSec', index:'a.half_left_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'halfRightDeg', index:'a.half_right_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'halfRightMin', index:'a.half_right_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'halfRightSec', index:'a.half_right_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("°")}', name:'fullValueDeg', index:'a.full_value_deg', width:50, align:"center"},
+		{header:'${text("′")}', name:'fullValueMin', index:'a.full_value_min', width:50, align:"center"},
+		{header:'${text("″")}', name:'fullValueSec', index:'a.full_value_sec', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("前视")}', name:'doubleCFore', index:'a.double_c_fore', width:40, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("后视")}', name:'doubleCBack', index:'a.double_c_back', width:40, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"center"},
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('observation:observationData:edit')){ %>
+				actions.push('<a href="${ctx}/observation/observationData/form?id='+row.id+'" class="btnList" title="${text("编辑观测数据")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/observation/observationData/delete?id='+row.id+'" class="btnList" title="${text("删除观测数据")}" data-confirm="${text("确认要删除该观测数据吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年3月15日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据小组名称来合并导线名称
+		// MergerRowspanToOther("dataGrid", 'group.groupName', 'line.lineName');
+		// 根据导线来合并解算时间
+		MergerRowspanToOther("dataGrid", 'line.lineName', 'solutionDate');
+		// 根据解算时间来合并导线名称
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'line.lineName');
+		// 根据解算时间来合并状态
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'status');
+		// 隐藏列
+		// $('#dataGrid').dataGrid('hideCol', 'solutionDate');
+		// $('#dataGrid').setGridParam().hideCol("solutionDate").trigger("reloadGrid");
+	},
+	// 设置多级表头
+	groupHeaders: {
+		twoLevel:[
+			{startColumnName: 'foreLeftDeg',numberOfColumns:3,titleText: '左读数'},
+			{startColumnName: 'foreRightDeg',numberOfColumns:3,titleText:'右读数'},
+			{startColumnName: 'backLeftDeg',numberOfColumns:3,titleText: '左读数'},
+			{startColumnName: 'backRightDeg',numberOfColumns:3,titleText:'右读数'},
+			{startColumnName: 'halfLeftDeg',numberOfColumns:3,titleText:'盘左'},
+			{startColumnName: 'halfRightDeg',numberOfColumns:3,titleText:'盘右'},
+		],
+		threeLevel:[
+			{startColumnName: 'foreLeftDeg',numberOfColumns:6,titleText:'前视'},
+			{startColumnName: 'backLeftDeg',numberOfColumns:6,titleText:'后视'},
+			{startColumnName: 'foreDistance',numberOfColumns:2,titleText:'平距(m)'},
+			{startColumnName: 'halfLeftDeg',numberOfColumns:6,titleText:'半测回角值'},
+			{startColumnName: 'fullValueDeg',numberOfColumns:3,titleText:'一测回角值'},
+			{startColumnName: 'doubleCFore',numberOfColumns:2,titleText:'2C互差(″)'},
+		]
+	}
+});
+
+// 查询导线 2022年3月14日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+
+// 查询测站 2022年3月14日 su添加
+$("#line_id").change(function () {
+	var stnSelect = document.getElementById("station_id");
+	// 需要先把测站下拉框置空
+	$("#station_id").empty();
+	//导线下拉框改变时发送请求到后台查询对应导线下的测站
+	$.get("${ctx}/station/station/findStationListByLineId?lineId=" + this.value, function (result) {
+		var stationList = result.stationList;
+		// 给测站下拉框添加选项
+		// 空白项
+		stnSelect.options.add(new Option("", ""));
+		// 其他项
+		stationList.forEach(function (station) {
+			stnSelect.options.add(new Option(station.stationName, station.id));
+		});
+	});
+});
+</script>

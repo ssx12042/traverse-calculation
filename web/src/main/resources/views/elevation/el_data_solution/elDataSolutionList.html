@@ -1,0 +1,389 @@
+<% layout('/layouts/default.html', {title: '高程——数据解算管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('高程——数据解算管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('el_data_solution:elDataSolution:edit')){ %>
+					<a href="${ctx}/el_data_solution/elDataSolution/form" class="btn btn-default btnTool" title="${text('新增高程——数据解算')}"><i class="fa fa-plus"></i> ${text('数据解算')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${elDataSolution}" action="${ctx}/el_data_solution/elDataSolution/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<!--————————————————————————————————————————————————————————————————————————-->
+				<!--2022年5月23日 su修改-->
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="group.id" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="line.id" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control" />
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('解算时间')}：</label>
+					<div class="control-inline">
+						<!--<#form:input path="solutionDate" readonly="true" maxlength="20" class="form-control laydate width-datetime"
+							dataFormat="datetime" data-type="datetime" data-format="yyyy-MM-dd HH:mm"/>-->
+						<#form:input path="solutionDate" maxlength="20" class="form-control"/>
+					</div>
+				</div>
+				<!--————————————————————————————————————————————————————————————————————————-->
+
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<!--引入公共js代码 2022年5月30日 su添加-->
+<script src="${ctxStatic}/common/common.js"></script>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		// 新增小组和导线两列 2022年5月30日 su添加
+		{header:'${text("小组")}', name:'group.groupName', index:'u6.group_name', width:100, align:"center"},
+		{header:'${text("导线")}', name:'line.lineName', index:'u5.line_name', width:100, align:"center"},
+
+		{header:'${text("后视站点")}', name:'backStn.stationName', index:'u4.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+		{header:'${text("测站")}', name:'station.stationName', index:'u2.station_name', width:100, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return "<span style='color: dodgerblue'>" + val + "</span>";
+		}},
+		{header:'${text("前视站点")}', name:'foreStn.stationName', index:'u3.station_name', width:100, align:"center", formatter: function(val, obj, row, act){
+			if (val === undefined) {
+				return "无"
+			}
+			return val;
+		}},
+
+		// ------------前视
+		{header:'${text("各测回平均仪器高(m)")}', name:'heightInstrumentForeAvg', index:'a.height_instrument_fore_avg', width:80, align:"center", formatter: function(val, obj, row, act){
+			// 如果为999，则显示为 '无'
+			if (val === 999) {
+				return '无'
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有前站，则合并观测前站的列
+			if (row.foreStnId === '0') {
+				return ' colspan=9'
+			}
+		}},
+		{header:'${text("各测回平均镜高(m)")}', name:'heightLensForeAvg', index:'a.height_lens_fore_avg', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有前站，被合并的列需要隐藏
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("°")}', name:'verticalAngDegForeAvg', index:'a.vertical_ang_deg_fore_avg', width:50, align:"center", formatter: function(val, obj, row, act){
+			if (row.verticalAngSignFore === -1) {
+				return '-' + val
+			}
+			return val
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("′")}', name:'verticalAngMinForeAvg', index:'a.vertical_ang_min_fore_avg', width:50, align:"center", cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("″")}', name:'verticalAngSecForeAvg', index:'a.vertical_ang_sec_fore_avg', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("弧度")}', name:'verticalAngRadianFore', index:'a.vertical_ang_radian_fore', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 9, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("高差(m)")}', name:'elevationDiffFore', index:'a.elevation_diff_fore', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("改正后的高差(m)")}', name:'elevationDiffForeCor', index:'a.elevation_diff_fore_cor', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+
+		// ------------平均平距(前视)
+		{header:'${text("平均平距(前视)(m)")}', name:'distanceForeAvg', index:'a.distance_fore_avg', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.foreStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+
+		// ------------后视
+		{header:'${text("各测回平均仪器高(m)")}', name:'heightInstrumentBackAvg', index:'a.height_instrument_back_avg', width:80, align:"center", formatter: function(val, obj, row, act){
+			// 如果为999，则显示为 '无'
+			if (val === 999) {
+				return '无'
+			}
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' colspan=8'
+			}
+		}},
+		{header:'${text("各测回平均镜高(m)")}', name:'heightLensBackAvg', index:'a.height_lens_back_avg', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			// 如果没有后站，被合并的列需要隐藏
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("°")}', name:'verticalAngDegBackAvg', index:'a.vertical_ang_deg_back_avg', width:50, align:"center", formatter: function(val, obj, row, act){
+			if (row.verticalAngSignBack === -1) {
+				return '-' + val
+			}
+			return val
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("′")}', name:'verticalAngMinBackAvg', index:'a.vertical_ang_min_back_avg', width:50, align:"center", cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("″")}', name:'verticalAngSecBackAvg', index:'a.vertical_ang_sec_back_avg', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 1, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("弧度")}', name:'verticalAngRadianBack', index:'a.vertical_ang_radian_back', width:100, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 9, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("高差(m)")}', name:'elevationDiffBack', index:'a.elevation_diff_back', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+		{header:'${text("改正后的高差(m)")}', name:'elevationDiffBackCor', index:'a.elevation_diff_back_cor', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}, cellattr: function (val, obj, row, act) {
+			if (row.backStnId === '0') {
+				return ' style="display:none;"'
+			}
+		}},
+
+		// ------------高程
+		{header:'${text("前视")}', name:'elevationFore', index:'a.elevation_fore', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("后视")}', name:'elevationBack', index:'a.elevation_back', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("平均")}', name:'elevation', index:'a.elevation', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+
+		// ------------结果评定
+		{header:'${text("导线等级")}', name:'resEval.traverseClass', index:'u7.traverse_class', width:50, align:"center"},
+		{header:'${text("球气差")}', name:'resEval.isQQC', index:'u7.is_qqc', width:120, align:"center", formatter: function(val, obj, row, act){
+			// 如果不考虑球气差，则显示为 '不考虑'
+			if (val === 1) {
+				var K = row.resEval.coefficientK
+				var R = row.resEval.coefficientR
+				return 'K:' + K + ' R:' + R + 'km'
+			} else {
+				return '不考虑'
+			}
+			// return js.formatNumber(val, 4, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("计算")}', name:'errElevaDiffRoundTripFore', index:'a.err_eleva_diff_round_trip_fore', width:90, align:"center", formatter: function(val, obj, row, act){
+			// 如果无前站，则显示为 '无'
+			if (row.foreStnId === '0') {
+				return '无'
+			}
+			// 如果超标显示红色，否则显示绿色
+			if (val > row.errElevaDiffRoundTripForeNorm) {
+				return "<span style='color: red'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			} else {
+				return "<span style='color: #59A869'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			}
+			// return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("标准")}', name:'errElevaDiffRoundTripForeNorm', index:'a.err_eleva_diff_round_trip_fore_norm', width:90, align:"center", formatter: function(val, obj, row, act){
+			// 如果无前站，则显示为 '无'
+			if (row.foreStnId === '0') {
+				return '无'
+			}
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("计算")}', name:'resEval.fullMidErrElevaDiffPerKm', index:'u7.full_mid_err_eleva_diff_per_km', width:80, align:"center", formatter: function(val, obj, row, act){
+			// 如果超标显示红色，否则显示绿色
+			if (val > row.resEval.fullMidErrElevaDiffPerKmNorm) {
+				return "<span style='color: red'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			} else {
+				return "<span style='color: #59A869'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			}
+			// return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("标准")}', name:'resEval.fullMidErrElevaDiffPerKmNorm', index:'u7.full_mid_err_eleva_diff_per_km_norm', width:80, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("计算")}', name:'resEval.closErrLine', index:'u7.clos_err_line', width:60, align:"center", formatter: function(val, obj, row, act){
+			// 如果超标显示红色，否则显示绿色
+			if (val > row.resEval.closErrLineNorm) {
+				return "<span style='color: red'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			} else {
+				return "<span style='color: #59A869'>" + js.formatNumber(val, 2, false, '') + "</span>";
+			}
+			// return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("标准")}', name:'resEval.closErrLineNorm', index:'u7.clos_err_line_norm', width:60, align:"center", formatter: function(val, obj, row, act){
+			return js.formatNumber(val, 2, false, ''); // 数值类型格式化 (原始数值, 小数位数, 是否千分位, 默认值，金额情况下设置0.00);
+		}},
+		{header:'${text("评价")}', name:'resEval.resultEvaluation', index:'u7.result_evaluation', width:150, align:"center", formatter: function(val, obj, row, act){
+			// 对结果评价进行美化
+			if (val === "√") {
+				return "<span style='color: #59A869; font-weight: bold'>" + val + "</span>";
+			} else {
+				return "<span style='color: red'>" + val + "</span>";
+			}
+		}},
+
+		{header:'${text("状态")}', name:'status', index:'a.status', width:50, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("解算时间")}', name:'solutionDate', index:'a.solution_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"center"}
+		// 不需要操作 2022年5月30日 su修改
+		/*,
+		{header:'${text("操作")}', name:'actions', width:120, align:"center", sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('el_data_solution:elDataSolution:edit')){ %>
+				actions.push('<a href="${ctx}/el_data_solution/elDataSolution/form?id='+row.id+'" class="btnList" title="${text("编辑高程——数据解算")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}*/
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 2022年5月30日 su添加
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据导线来合并解算时间
+		MergerRowspanToOther("dataGrid", 'line.lineName', 'solutionDate');
+		// 根据解算时间来合并导线名称
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'line.lineName');
+		// 根据解算时间来合并导线测量等级
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.traverseClass');
+		// 根据解算时间来合并球气差列
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.isQQC');
+		// 根据解算时间来合并每千米高差全中误差(mm)-计算
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.fullMidErrElevaDiffPerKm');
+		// 根据解算时间来合并每千米高差全中误差(mm)-标准
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.fullMidErrElevaDiffPerKmNorm');
+		// 根据解算时间来合并导线闭合差(mm)-计算
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.closErrLine');
+		// 根据解算时间来合并导线闭合差(mm)-标准
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.closErrLineNorm');
+		// 根据解算时间来合并结果评价
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'resEval.resultEvaluation');
+		// 根据解算时间来合并状态
+		MergerRowspanToOther("dataGrid", 'solutionDate', 'status');
+	},
+	// 设置多级表头
+	groupHeaders: {
+		twoLevel:[
+			{startColumnName: 'verticalAngDegForeAvg',numberOfColumns:4,titleText: '各测回平均垂直角'},
+			{startColumnName: 'verticalAngDegBackAvg',numberOfColumns:4,titleText: '各测回平均垂直角'},
+			{startColumnName: 'errElevaDiffRoundTripFore',numberOfColumns:2,titleText: '往返测高差较差(前视)(mm)'},
+			{startColumnName: 'resEval.fullMidErrElevaDiffPerKm',numberOfColumns:2,titleText: '每千米高差全中误差(mm)'},
+			{startColumnName: 'resEval.closErrLine',numberOfColumns:2,titleText: '导线闭合差(mm)'},
+		],
+		threeLevel:[
+			{startColumnName: 'heightInstrumentForeAvg',numberOfColumns:8,titleText:'前视'},
+			{startColumnName: 'heightInstrumentBackAvg',numberOfColumns:8,titleText:'后视'},
+			{startColumnName: 'elevationFore',numberOfColumns:3,titleText:'高程(m)'},
+			{startColumnName: 'resEval.traverseClass',numberOfColumns:9,titleText:'结果评定'},
+		]
+	}
+});
+
+// 查询导线 2022年5月23日 su添加
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/el_line/eLLine/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.ELLineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

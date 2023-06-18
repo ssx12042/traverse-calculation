@@ -1,0 +1,130 @@
+<% layout('/layouts/default.html', {title: '错误边角查询管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('错误边角查询管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('wrong:wrongResult:edit')){ %>
+					<a href="${ctx}/wrong/wrongResult/form" class="btn btn-default btnTool" title="${text('新增错误边角查询')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${wrongResult}" action="${ctx}/wrong/wrongResult/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('小组')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="groupId" id="group_id"
+						items="${groupList}" itemLabel="groupName" itemValue="id"
+						dictType="" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('导线')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="lineId" id="line_id"
+						items="${lineList}" itemLabel="lineName" itemValue="id"
+						dictType="" blankOption="true" class="form-control"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("小组")}',name:'group.groupName', index:'u3.group_name', width:150, align:"center", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/wrong/wrongResult/form?id='+row.id+'" class="btnList" data-title="${text("编辑错误边角查询")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("导线")}', name:'line.lineName', index:'u2.line_name', width:150, align:"center"},
+		{header:'${text("创建者")}', name:'createBy', index:'a.create_by', width:150, align:"center"},
+		{header:'${text("错误位置")}', name:'wrong', index:'a.wrong', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('wrong:wrongResult:edit')){ %>
+				actions.push('<a href="${ctx}/wrong/wrongResult/form?id='+row.id+'" class="btnList" title="${text("编辑错误边角查询")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				actions.push('<a href="${ctx}/wrong/wrongResult/delete?id='+row.id+'" class="btnList" title="${text("删除错误边角查询")}" data-confirm="${text("确认要删除该错误边角查询吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		// 合并相同数据行。在加载完成数据之后调用 mergeCell 方法：
+		// 第二个参数指定，合并的单元格列名（多个用逗号分隔，如：'company.companyNameSimple,office.officeName'）
+		// 合并相同的小组名称
+		$('#dataGrid').dataGrid('mergeCell', 'group.groupName');
+		// 根据小组名称来合并导线名称
+		MergerRowspanToOther("dataGrid", 'group.groupName', 'line.lineName');
+	}
+});
+/**
+ * 根据某一栏位值去合并另一栏位（根据cellName合并otherCellName）
+ * @param gridName 表格id
+ * @param cellName 某一栏位
+ * @param otherCellName 另一栏位
+ * @constructor
+ */
+function MergerRowspanToOther(gridName, cellName, otherCellName) {
+	// 获取dataGrid表格
+	var dataGrid = $("#" + gridName);
+	//得到显示到界面的id集合
+	var mya = dataGrid.getDataIDs();
+	//当前显示多少条
+	var length = mya.length;
+	//定义合并行数
+	var rowSpanTaxCount;
+	for (var i = 0; i < length; i += rowSpanTaxCount) {
+		//从上到下获取一条信息
+		var before = dataGrid.jqGrid('getRowData', mya[i]);
+		rowSpanTaxCount = 1;
+		for (j = i + 1; j < length; j++) {
+			//和上边的信息对比 如果值一样就合并行数+1 然后设置rowspan 让当前单元格隐藏
+			var end = dataGrid.jqGrid('getRowData', mya[j]);
+			if ((before[cellName] === end[cellName]) && (before[otherCellName] === end[otherCellName])) {
+				rowSpanTaxCount++;
+				$("#" + gridName + "").setCell(mya[j], otherCellName, '', { display: 'none' });
+			} else {
+				break;
+			}
+		}
+		// 进行合并
+		// 如果rowSpanTaxCount等于1的话就没必要合并了
+		if (rowSpanTaxCount !== 1) {
+			$("#" + gridName + "").setCell(mya[i], otherCellName, '', '', {rowspan: rowSpanTaxCount});
+		}
+	}
+}
+
+// 点击小组下拉框选项之后，查询导线下拉框
+$("#group_id").change(function () {
+	var lineSelect = document.getElementById("line_id");
+	// 需要先把导线下拉框置空
+	$("#line_id").empty();
+	//小组下拉框改变时发送请求到后台查询对应小组下的导线
+	$.get("${ctx}/line/line/findLineListByGroupId?groupId=" + this.value, function (result) {
+		var lineList = result.lineList;
+		// 给导线下拉框添加选项
+		// 空白项
+		lineSelect.options.add(new Option("", ""));
+		// 其他项
+		lineList.forEach(function (line) {
+			lineSelect.options.add(new Option(line.lineName, line.id));
+		});
+	});
+});
+</script>

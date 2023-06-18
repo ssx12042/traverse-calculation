@@ -1,0 +1,109 @@
+<% layout('/layouts/default.html', {title: '数据权限演示管理', libs: ['dataGrid']}){ %>
+<div class="main-content">
+	<div class="box box-main">
+		<div class="box-header">
+			<div class="box-title">
+				<i class="fa icon-notebook"></i> ${text('数据权限演示管理')}
+			</div>
+			<div class="box-tools pull-right">
+				<a href="#" class="btn btn-default" id="btnSearch" title="${text('查询')}"><i class="fa fa-filter"></i> ${text('查询')}</a>
+				<% if(hasPermi('demo:demoData:edit')){ %>
+					<a href="${ctx}/demo/demoData/form" class="btn btn-default btnTool" title="${text('新增数据权限演示')}"><i class="fa fa-plus"></i> ${text('新增')}</a>
+				<% } %>
+			</div>
+		</div>
+		<div class="box-body">
+			<#form:form id="searchForm" model="${demoData}" action="${ctx}/demo/demoData/listData" method="post" class="form-inline hide"
+					data-page-no="${parameter.pageNo}" data-page-size="${parameter.pageSize}" data-order-by="${parameter.orderBy}">
+				<div class="form-group">
+					<label class="control-label">${text('用户选择')}：</label>
+					<div class="control-inline width-120">
+						<#form:treeselect id="demoUserCode" title="${text('用户选择')}"
+						path="demoUserCode.userCode" labelPath="demoUserCode.userName"
+						url="${ctx}/sys/office/treeData?isLoadUser=true" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('机构选择')}：</label>
+					<div class="control-inline width-120">
+						<#form:treeselect id="demoOfficeCode" title="${text('机构选择')}"
+						path="demoOfficeCode.officeCode" labelPath="demoOfficeCode.officeName"
+						url="${ctx}/sys/office/treeData" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('区域选择')}：</label>
+					<div class="control-inline width-120">
+						<#form:treeselect id="demoAreaCode" title="${text('区域选择')}"
+						path="demoAreaCode.areaCode" labelPath="demoAreaCode.areaName"
+						url="${ctx}/sys/area/treeData" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('企业选择')}：</label>
+					<div class="control-inline width-120">
+						<#form:treeselect id="demoCompanyCode" title="${text('机构选择')}"
+						path="demoCompanyCode.companyCode" labelPath="demoCompanyCode.companyName"
+						url="${ctx}/sys/company/treeData" allowClear="true"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('状态')}：</label>
+					<div class="control-inline width-120">
+						<#form:select path="status" dictType="sys_search_status" blankOption="true" class="form-control isQuick"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<label class="control-label">${text('备注信息')}：</label>
+					<div class="control-inline">
+						<#form:input path="remarks" maxlength="500" class="form-control width-120"/>
+					</div>
+				</div>
+				<div class="form-group">
+					<button type="submit" class="btn btn-primary btn-sm">${text('查询')}</button>
+					<button type="reset" class="btn btn-default btn-sm">${text('重置')}</button>
+				</div>
+			</#form:form>
+			<table id="dataGrid"></table>
+			<div id="dataGridPage"></div>
+		</div>
+	</div>
+</div>
+<% } %>
+<script>
+// 初始化DataGrid对象
+$('#dataGrid').dataGrid({
+	searchForm: $("#searchForm"),
+	columnModel: [
+		{header:'${text("用户选择")}', name:'demoUserCode.userCode', index:'a.demo_user_code', width:150, align:"left", frozen:true, formatter: function(val, obj, row, act){
+			return '<a href="${ctx}/demo/demoData/form?id='+row.id+'" class="btnList" data-title="${text("编辑数据权限演示")}">'+(val||row.id)+'</a>';
+		}},
+		{header:'${text("机构选择")}', name:'demoOfficeCode.officeName', index:'a.demo_office_code', width:150, align:"left"},
+		{header:'${text("区域选择")}', name:'demoAreaCode.areaName', index:'a.demo_area_code', width:150, align:"left"},
+		{header:'${text("企业选择")}', name:'demoCompanyCode.companyName', index:'a.demo_company_code', width:150, align:"left"},
+		{header:'${text("角色")}', name:'demoRoleCode.roleName', index:'u1.role_code', width:150, align:"left"},
+		{header:'${text("状态")}', name:'status', index:'a.status', width:150, align:"center", formatter: function(val, obj, row, act){
+			return js.getDictLabel(${@DictUtils.getDictListJson('sys_search_status')}, val, '${text("未知")}', true);
+		}},
+		{header:'${text("更新时间")}', name:'updateDate', index:'a.update_date', width:150, align:"center"},
+		{header:'${text("备注信息")}', name:'remarks', index:'a.remarks', width:150, align:"left"},
+		{header:'${text("操作")}', name:'actions', width:120, sortable:false, title:false, formatter: function(val, obj, row, act){
+			var actions = [];
+			<% if(hasPermi('demo:demoData:edit')){ %>
+				actions.push('<a href="${ctx}/demo/demoData/form?id='+row.id+'" class="btnList" title="${text("编辑数据权限演示")}"><i class="fa fa-pencil"></i></a>&nbsp;');
+				if (row.status == Global.STATUS_NORMAL){
+					actions.push('<a href="${ctx}/demo/demoData/disable?id='+row.id+'" class="btnList" title="${text("停用数据权限演示")}" data-confirm="${text("确认要停用该数据权限演示吗？")}"><i class="glyphicon glyphicon-ban-circle"></i></a>&nbsp;');
+				} else if (row.status == Global.STATUS_DISABLE){
+					actions.push('<a href="${ctx}/demo/demoData/enable?id='+row.id+'" class="btnList" title="${text("启用数据权限演示")}" data-confirm="${text("确认要启用该数据权限演示吗？")}"><i class="glyphicon glyphicon-ok-circle"></i></a>&nbsp;');
+				}
+				actions.push('<a href="${ctx}/demo/demoData/delete?id='+row.id+'" class="btnList" title="${text("删除数据权限演示")}" data-confirm="${text("确认要删除该数据权限演示吗？")}"><i class="fa fa-trash-o"></i></a>&nbsp;');
+			<% } %>
+			return actions.join('');
+		}}
+	],
+	// 加载成功后执行事件
+	ajaxSuccess: function(data){
+		
+	}
+});
+</script>
